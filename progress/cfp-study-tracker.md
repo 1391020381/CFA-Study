@@ -1,8 +1,8 @@
 # CFP Exam Study Tracker
 
-**Last Updated**: October 24, 2025
+**Last Updated**: October 25, 2025
 **Exam Date**: November 10, 2025
-**Days Until Exam**: 17 days
+**Days Until Exam**: 16 days
 
 This single document tracks ALL your CFP exam preparation progress, including:
 - Topics mastered from study sessions
@@ -16,7 +16,7 @@ This single document tracks ALL your CFP exam preparation progress, including:
 
 📊 **Overall Progress**: 51/73 topics covered = **70%**
 📚 **Study Materials**: 1,088 pages of 2024 Dalton slides
-⏰ **Time Remaining**: 17 days
+⏰ **Time Remaining**: 16 days
 🎯 **Target**: Pass CFP exam November 10, 2025
 
 ---
