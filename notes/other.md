@@ -5,7 +5,7 @@
 3. [https://github.com/ccxt/ccxt](ccxt)
 4. [http://github.com/vnpy/vnpy](vnpy)
 5. [https://github.com/microsoft/qlib](qlib)
-
+6. [https://github.com/akfamily/akshare](akshare)
 ## 框架
 
 1. [https://www.thinktrader.net/index.html](qmt)

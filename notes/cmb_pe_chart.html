@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>招商银行市盈率趋势分析</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(120deg, #00d4ff 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header .subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-card .label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .stat-card.mean .value { color: #60a5fa; }
+        .stat-card.median .value { color: #34d399; }
+        .stat-card.std .value { color: #f472b6; }
+        .stat-card.min .value { color: #34d399; }
+        .stat-card.max .value { color: #f87171; }
+        .stat-card.low-zone .value { color: #34d399; }
+        .stat-card.high-zone .value { color: #f87171; }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            color: #e2e8f0;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .legend-color.pe { background: #00d4ff; }
+        .legend-color.mean { background: #ffd700; }
+        .legend-color.low { background: #00ff88; }
+        .legend-color.high { background: #ff6b6b; }
+
+        #peChart {
+            width: 100%;
+            height: 500px;
+        }
+
+        .info-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .info-section p {
+            color: #94a3b8;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+
+        .formula {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            color: #00d4ff;
+        }
+
+        .percentiles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .percentile-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .percentile-item .label {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+
+        .percentile-item .value {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            #peChart {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>招商银行市盈率趋势分析</h1>
+            <div class="subtitle">股票代码: 600036.SH | 数据周期: 近10年</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card mean">
+                <div class="label">PE均值</div>
+                <div class="value" id="meanValue">--</div>
+            </div>
+            <div class="stat-card median">
+                <div class="label">PE中位数</div>
+                <div class="value" id="medianValue">--</div>
+            </div>
+            <div class="stat-card std">
+                <div class="label">标准差</div>
+                <div class="value" id="stdValue">--</div>
+            </div>
+            <div class="stat-card min">
+                <div class="label">历史最低PE</div>
+                <div class="value" id="minValue">--</div>
+            </div>
+            <div class="stat-card max">
+                <div class="label">历史最高PE</div>
+                <div class="value" id="maxValue">--</div>
+            </div>
+            <div class="stat-card low-zone">
+                <div class="label">低估值区间 (均值-1σ)</div>
+                <div class="value" id="lowZoneValue">--</div>
+            </div>
+            <div class="stat-card high-zone">
+                <div class="label">高估值区间 (均值+1σ)</div>
+                <div class="value" id="highZoneValue">--</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">市盈率走势图</div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color pe"></div>
+                        <span>PE</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color mean"></div>
+                        <span>均值</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color low"></div>
+                        <span>低估值区间</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color high"></div>
+                        <span>高估值区间</span>
+                    </div>
+                </div>
+            </div>
+            <div id="peChart"></div>
+        </div>
+
+        <div class="info-section">
+            <h3>估值分析说明</h3>
+            <div class="formula">
+                PE = 收盘价 ÷ 每股收益(EPS)
+            </div>
+            <p><strong>估值区间解释：</strong></p>
+            <ul style="color: #94a3b8; line-height: 1.8; margin-left: 20px;">
+                <li><strong style="color: #34d399;">低估值区间 (PE < 4.06)</strong>: 均值减去1个标准差，可能处于被低估状态</li>
+                <li><strong style="color: #60a5fa;">合理估值 (4.06 ≤ PE ≤ 18.26)</strong>: 在均值±1标准差范围内，估值相对合理</li>
+                <li><strong style="color: #f87171;">高估值区间 (PE > 18.26)</strong>: 均值加上1个标准差，可能处于高估状态</li>
+            </ul>
+
+            <h3 style="margin-top: 20px;">百分位数分布</h3>
+            <div class="percentiles">
+                <div class="percentile-item">
+                    <div class="label">P10 (10%)</div>
+                    <div class="value" id="p10Value">--</div>
+                </div>
+                <div class="percentile-item">
+                    <div class="label">P25 (25%)</div>
+                    <div class="value" id="p25Value">--</div>
+                </div>
+                <div class="percentile-item">
+                    <div class="label">P50 (50%)</div>
+                    <div class="value" id="p50Value">--</div>
+                </div>
+                <div class="percentile-item">
+                    <div class="label">P75 (75%)</div>
+                    <div class="value" id="p75Value">--</div>
+                </div>
+                <div class="percentile-item">
+                    <div class="label">P90 (90%)</div>
+                    <div class="value" id="p90Value">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 加载数据
+        async function loadData() {
+            const response = await fetch('cmb_pe_data.json');
+            const data = await response.json();
+            return data;
+        }
+
+        // 格式化数值
+        function formatValue(value, decimals = 2) {
+            return value.toFixed(decimals);
+        }
+
+        // 创建图表
+        function createChart(data) {
+            const dates = data.data.map(d => d.日期);
+            const peValues = data.data.map(d => d.PE);
+            const stats = data.statistics;
+
+            // 更新统计值显示
+            document.getElementById('meanValue').textContent = formatValue(stats.mean);
+            document.getElementById('medianValue').textContent = formatValue(stats.median);
+            document.getElementById('stdValue').textContent = formatValue(stats.std);
+            document.getElementById('minValue').textContent = formatValue(stats.min);
+            document.getElementById('maxValue').textContent = formatValue(stats.max);
+            document.getElementById('lowZoneValue').textContent = formatValue(stats.low_value_zone);
+            document.getElementById('highZoneValue').textContent = formatValue(stats.high_value_zone);
+            document.getElementById('p10Value').textContent = formatValue(stats.p10);
+            document.getElementById('p25Value').textContent = formatValue(stats.p25);
+            document.getElementById('p50Value').textContent = formatValue(stats.p50);
+            document.getElementById('p75Value').textContent = formatValue(stats.p75);
+            document.getElementById('p90Value').textContent = formatValue(stats.p90);
+
+            // 创建轨迹
+            const traces = [
+                // PE线
+                {
+                    x: dates,
+                    y: peValues,
+                    mode: 'lines',
+                    name: 'PE',
+                    line: {
+                        color: '#00d4ff',
+                        width: 2
+                    },
+                    hovertemplate: '%{x}<br>PE: %{y:.2f}<extra></extra>'
+                },
+                // 均值线
+                {
+                    x: dates,
+                    y: Array(dates.length).fill(stats.mean),
+                    mode: 'lines',
+                    name: '均值',
+                    line: {
+                        color: '#ffd700',
+                        width: 2,
+                        dash: 'dash'
+                    },
+                    hovertemplate: '均值: %{y:.2f}<extra></extra>'
+                },
+                // 低估值区间线
+                {
+                    x: dates,
+                    y: Array(dates.length).fill(stats.low_value_zone),
+                    mode: 'lines',
+                    name: '低估值区间',
+                    line: {
+                        color: '#00ff88',
+                        width: 1.5,
+                        dash: 'dot'
+                    },
+                    hovertemplate: '低估值区间: %{y:.2f}<extra></extra>'
+                },
+                // 高估值区间线
+                {
+                    x: dates,
+                    y: Array(dates.length).fill(stats.high_value_zone),
+                    mode: 'lines',
+                    name: '高估值区间',
+                    line: {
+                        color: '#ff6b6b',
+                        width: 1.5,
+                        dash: 'dot'
+                    },
+                    hovertemplate: '高估值区间: %{y:.2f}<extra></extra>'
+                }
+            ];
+
+            // 布局
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(255,255,255,0.02)',
+                font: {
+                    color: '#94a3b8'
+                },
+                margin: {
+                    l: 60,
+                    r: 30,
+                    t: 30,
+                    b: 60
+                },
+                xaxis: {
+                    title: '日期',
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    showgrid: true
+                },
+                yaxis: {
+                    title: '市盈率 (PE)',
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    showgrid: true
+                },
+                hovermode: 'x unified',
+                legend: {
+                    orientation: 'h',
+                    y: 1.02,
+                    x: 0.5,
+                    xanchor: 'center'
+                }
+            };
+
+            // 配置
+            const config = {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+                displaylogo: false
+            };
+
+            Plotly.newPlot('peChart', traces, layout, config);
+        }
+
+        // 初始化
+        loadData().then(data => {
+            createChart(data);
+        }).catch(error => {
+            console.error('加载数据失败:', error);
+            document.getElementById('peChart').innerHTML = '<p style="text-align: center; color: #ff6b6b;">数据加载失败，请确保 cmb_pe_data.json 文件存在</p>';
+        });
+    </script>
+</body>
+</html>
